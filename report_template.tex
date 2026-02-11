@@ -1,0 +1,65 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% Empty Two Column LaTeX Template (Based on AAMAS-2023 (based on sample-sigconf.tex))
+
+\documentclass[sigconf,nonacm]{acmart}
+
+%%% Load required packages here (note that many are included already).
+
+\usepackage{balance} % for balancing columns on the final page
+
+\title[RL Bachelor]{
+    Assignment X: Topic
+}
+
+\author{Group Member 1 (sXXXXXX) \& Group Member 2 (sXXXXXX)}
+\affiliation{
+    Group Number: XX
+    \country{} \institution{} \city{} % Just included empty to avoid some warnings
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Keep this part as is
+\begin{document}
+\pagestyle{fancy} 
+\lhead{}
+\rhead{Introduction to Reinforcement Learning, Leiden University, 2025}
+\maketitle 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Introduction}
+
+Reinforcement Learning \cite{sutton2018reinforcement} \ldots
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.9\linewidth]{figures/rl.png}
+\caption{Write a self-contained caption for each figure. Then write full interpretation in the main text.}
+\end{figure}
+
+\begin{figure*}[h]
+\centering
+\includegraphics[width=0.9\linewidth]{figures/rl.png}
+\caption{(example for a two-column width image) Write a self-contained caption for each figure. Then write full interpretation in the main text.}
+\end{figure*}
+
+
+
+%%% The following command should be issued somewhere in the first column 
+%%% of the final page of your paper.
+\balance
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% The next two lines define, first, the bibliography style to be 
+%%% applied, and, second, the bibliography file to be used.
+
+\bibliographystyle{ieeetr} 
+\bibliography{bibliography}
+
+\end{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
