@@ -1,3 +1,9 @@
+import numpy as np
+from tqdm import tqdm
+
+from IRL_A2.ShortCutEnvironment import ShortcutEnvironment
+
+
 class QLearningAgent(object):
 
     def __init__(self, n_actions, n_states, epsilon=0.1, alpha=0.1, gamma=1.0):
@@ -7,20 +13,47 @@ class QLearningAgent(object):
         self.alpha = alpha
         self.gamma = gamma
         # TO DO: Initialize variables if necessary
+        self.Q = np.zeros((self.n_states, self.n_actions))
+
         
     def select_action(self, state):
         # TO DO: Implement policy
-        action = None
+        if np.random.rand() < self.epsilon:
+            action = np.random.randint(self.n_actions)
+        else:
+            action = np.argmax(self.Q[state])
         return action
         
-    def update(self, state, action, reward, done): # Augment arguments if necessary
+    def update(self, state, action, reward, done, next_state): # Augment arguments if necessary
         # TO DO: Implement Q-learning update
-        pass
+        if done:
+            next_r = 0
+        else:
+            next_r = self.gamma * np.max(self.Q[next_state])
+        self.Q[state][action] = self.Q[state][action] + self.alpha * (reward + next_r - self.Q[state][action])
     
-    def train(self, n_episodes):
+    def train(self, n_episodes, env):
         # TO DO: Implement the agent loop that trains for n_episodes. 
-        # Return a vector with the the cumulative reward (=return) per episode
+        # Return a vector with the cumulative reward (=return) per episode
+
         episode_returns = []
+        for episode in tqdm(range(n_episodes), desc="Training Agent"):
+            total_reward = 0
+            env.reset()
+
+            while not env.done():
+                action = self.select_action(env.state())
+
+                cur_state = env.state()
+
+                reward = env.step(action)
+                total_reward += reward
+
+                next_state = env.state()
+                self.update(cur_state, action, reward, env.done(), next_state)
+
+            episode_returns.append(total_reward)
+
         return episode_returns
 
 
@@ -68,6 +101,7 @@ class ExpectedSARSAAgent(object):
     def update(self, state, action, reward, done): # Augment arguments if necessary
         # TO DO: Implement Expected SARSA update
         pass
+
 
     def train(self, n_episodes):
         # TO DO: Implement the agent loop that trains for n_episodes. 
