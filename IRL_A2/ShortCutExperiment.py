@@ -9,6 +9,8 @@ from ShortCutAgents import QLearningAgent, SARSAAgent
 from ShortCutEnvironment import ShortcutEnvironment, WindyShortcutEnvironment
 # I think I'll move the progress tracking into these functions
 
+
+#This function basically agent.train() with map render
 def single_run(n_episodes=10000, environment=ShortcutEnvironment):
     # agent, env = single_run(10000, WindyShortcutEnvironment)
     env = environment()
@@ -129,5 +131,26 @@ def get_path(env, agent, start_row="top"):
     return path
 
 
+def run_windy_comparison():
+    # run_windy_comparison()
+    # Env
+    env_q = WindyShortcutEnvironment()
+    env_sarsa = WindyShortcutEnvironment()
 
+    # Agents
+    q = QLearningAgent(env_q.action_size(), env_q.state_size())
+    sarsa = SARSAAgent(env_sarsa.action_size(), env_sarsa.state_size())
+
+    q.train(10000, env_q)
+    sarsa.train(10000, env_sarsa)
+
+    print("Windy Q-Learning Policy")
+    env_q.render_greedy(q.Q)
+
+    print("Windy SARSA Policy")
+    env_sarsa.render_greedy(sarsa.Q)
+    print("We can see that SARSA is a pussy.")
+
+
+run_windy_comparison()
 
