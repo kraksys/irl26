@@ -4,7 +4,8 @@ import matplotlib
 # easier to load a window than opening an image for every plot
 matplotlib.use('TkAgg') # Or 'Qt5Agg' if you have PyQt installed
 import matplotlib.pyplot as plt
-from ShortCutAgents import QLearningAgent
+from tqdm import tqdm
+from ShortCutAgents import QLearningAgent, SARSAAgent
 from ShortCutEnvironment import ShortcutEnvironment
 # I think I'll move the progress tracking into these functions
 
@@ -24,16 +25,19 @@ def single_run(n_episodes=10000):
     plt.show()
 
 # single run
-single_run(10000)
+#single_run(10000)
 
 
 
-def run_repetitions(n_rep=100, n_episodes=1000):
+def run_repetitions(n_rep=100, n_episodes=1000, agent_type="qlearning"):
     all_results = []
 
-    for rep in range(n_rep):
+    for rep in tqdm(range(n_rep), desc="Training Agent"):
         env = ShortcutEnvironment()
-        agent = QLearningAgent(env.action_size(), env.state_size())
+        if agent_type == "qlearning":
+            agent = QLearningAgent(env.action_size(), env.state_size())
+        elif agent_type == "sarsa":
+            agent = SARSAAgent(env.action_size(), env.state_size())
 
         rewards = agent.train(n_episodes, env)
         all_results.append(rewards)
@@ -43,7 +47,11 @@ def run_repetitions(n_rep=100, n_episodes=1000):
 
     plt.figure(figsize=(10, 5))
     plt.plot(avg_rewards)
-    plt.title("Q-Learning: Average Learning Curve (100 Repetitions)")
+    if agent_type == "qlearning":
+        plot_text = "Q-Learning"
+    elif agent_type == "sarsa":
+        plot_text = "SARSA"
+    plt.title(f"{plot_text}: Average Learning Curve (100 Repetitions)")
     plt.xlabel("Episode")
     plt.ylabel("Average Cumulative Reward")
     plt.grid(True)
@@ -51,23 +59,26 @@ def run_repetitions(n_rep=100, n_episodes=1000):
 
 
 # multiple runs
-run_repetitions(100, 1000)
+run_repetitions(100, 1000, "sarsa")
 
 
-def run_alpha_experiment(alphas, n_rep=100, n_episodes=1000):
+def run_alpha_experiment(alphas, n_rep=100, n_episodes=1000, agent_type="qlearning"):
     plt.figure(figsize=(10, 6))
 
     for a in alphas:
         all_runs = []
 
-        for n in range(n_rep):
+        for n in tqdm(range(n_rep), desc=f"Training Agent (alpha = {a})"):
             env = ShortcutEnvironment()
-            agent = QLearningAgent(env.action_size(), env.state_size(), alpha=a)
+            if agent_type == "qlearning":
+                agent = QLearningAgent(env.action_size(), env.state_size(), alpha=a)
+            elif agent_type == "sarsa":
+                agent = SARSAAgent(env.action_size(), env.state_size(), alpha=a)
 
             rewards = agent.train(n_episodes, env)
             all_runs.append(rewards)
 
-        # Average the 100 runs
+
         avg_rewards = np.mean(all_runs, axis=0)
 
         # We use a window of 20
@@ -77,11 +88,15 @@ def run_alpha_experiment(alphas, n_rep=100, n_episodes=1000):
 
     plt.xlabel('Episodes')
     plt.ylabel('Average Cumulative Reward (Smoothed)')
-    plt.title('Q-Learning: Impact of Learning Rate (Alpha)')
+    if agent_type == "qlearning":
+        plot_text = "Q-Learning"
+    elif agent_type == "sarsa":
+        plot_text = "SARSA"
+    plt.title(f'{plot_text}: Impact of Learning Rate (Alpha)')
     plt.legend()
     plt.grid(True)
     plt.show()
 
 test_alphas = [0.01, 0.1, 0.5, 0.9]
-run_alpha_experiment(test_alphas)
+run_alpha_experiment(test_alphas, agent_type="sarsa")
 
