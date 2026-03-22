@@ -1,7 +1,6 @@
 import numpy as np
 from tqdm import tqdm
 
-from IRL_A2.ShortCutEnvironment import ShortcutEnvironment
 
 
 class QLearningAgent(object):
@@ -66,20 +65,49 @@ class SARSAAgent(object):
         self.alpha = alpha
         self.gamma = gamma
         # TO DO: Initialize variables if necessary
+        self.Q = np.zeros((self.n_states, self.n_actions))
         
     def select_action(self, state):
         # TO DO: Implement policy
-        action = None
+        if np.random.rand() < self.epsilon:
+            action = np.random.randint(self.n_actions)
+        else:
+            action = np.argmax(self.Q[state])
         return action
         
-    def update(self, state, action, reward, done): # Augment arguments if necessary
+    def update(self, state, action, reward, done, next_state, next_action): # Augment arguments if necessary
         # TO DO: Implement SARSA update
-        pass
+        if done:
+            next_r = 0
+        else:
+            next_r = self.gamma * self.Q[next_state][next_action]
 
-    def train(self, n_episodes):
+        self.Q[state][action] = self.Q[state][action] +  self.alpha * (reward + next_r - self.Q[state][action])
+
+    def train(self, n_episodes, env):
         # TO DO: Implement the agent loop that trains for n_episodes. 
         # Return a vector with the the cumulative reward (=return) per episode
         episode_returns = []
+        for episode in range(n_episodes):
+            total_reward = 0
+            env.reset()
+            cur_state = env.state()
+            action = self.select_action(cur_state)
+
+            while not env.done():
+
+                reward = env.step(action)
+                total_reward += reward
+
+                next_state = env.state()
+                next_action = self.select_action(next_state)
+                self.update(cur_state, action, reward, env.done(), next_state, next_action)
+
+                cur_state = next_state
+                action = next_action
+
+            episode_returns.append(total_reward)
+
         return episode_returns
 
 
