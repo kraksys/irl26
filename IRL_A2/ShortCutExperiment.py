@@ -6,11 +6,12 @@ matplotlib.use('TkAgg') # Or 'Qt5Agg' if you have PyQt installed
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from ShortCutAgents import QLearningAgent, SARSAAgent
-from ShortCutEnvironment import ShortcutEnvironment
+from ShortCutEnvironment import ShortcutEnvironment, WindyShortcutEnvironment
 # I think I'll move the progress tracking into these functions
 
-def single_run(n_episodes=10000):
-    env = ShortcutEnvironment()
+def single_run(n_episodes=10000, environment=ShortcutEnvironment):
+    # agent, env = single_run(10000, WindyShortcutEnvironment)
+    env = environment()
     agent = QLearningAgent(env.action_size(), env.state_size())
     reward_vector = agent.train(n_episodes, env)
     print("Final Greedy Policy Map:")
@@ -23,13 +24,15 @@ def single_run(n_episodes=10000):
     plt.title('Q-Learning Performance')
     plt.grid(True)
     plt.show()
+    return agent, env
 
 # single run
-#single_run(10000)
+# a, e = single_run(10000, WindyShortcutEnvironment)
 
 
 
 def run_repetitions(n_rep=100, n_episodes=1000, agent_type="qlearning"):
+    # run_repetitions(100, 1000, "sarsa")
     all_results = []
 
     for rep in tqdm(range(n_rep), desc="Training Agent"):
@@ -59,10 +62,12 @@ def run_repetitions(n_rep=100, n_episodes=1000, agent_type="qlearning"):
 
 
 # multiple runs
-run_repetitions(100, 1000, "sarsa")
+# run_repetitions(100, 1000, "sarsa")
 
 
 def run_alpha_experiment(alphas, n_rep=100, n_episodes=1000, agent_type="qlearning"):
+    # test_alphas = [0.01, 0.1, 0.5, 0.9]
+    # run_alpha_experiment(test_alphas, agent_type="sarsa")
     plt.figure(figsize=(10, 6))
 
     for a in alphas:
@@ -97,6 +102,32 @@ def run_alpha_experiment(alphas, n_rep=100, n_episodes=1000, agent_type="qlearni
     plt.grid(True)
     plt.show()
 
-test_alphas = [0.01, 0.1, 0.5, 0.9]
-run_alpha_experiment(test_alphas, agent_type="sarsa")
+# test_alphas = [0.01, 0.1, 0.5, 0.9]
+# run_alpha_experiment(test_alphas, agent_type="sarsa")
+
+
+def get_path(env, agent, start_row="top"):
+    # path = get_path(env, agent, "bottom")
+    env.reset()
+    if start_row == "top":
+        start_row = 2
+    elif start_row == "bottom":
+        start_row = 9
+
+    env.y = start_row
+    env.x = 2
+    env.starty = start_row  # Required so cliff respawn works correctly
+
+    path = []
+    while not env.done():
+        state = env.state()
+        path.append((env.x, env.y))
+
+        action = np.argmax(agent.Q[state])
+        env.step(action)
+
+    return path
+
+
+
 
