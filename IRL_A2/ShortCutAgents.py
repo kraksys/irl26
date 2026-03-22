@@ -187,11 +187,14 @@ class nStepSARSAAgent(object):
         self.alpha = alpha
         self.gamma = gamma
         # TO DO: Initialize variables if necessary
-        
+        self.Q = np.zeros((n_states, n_actions))
+
     def select_action(self, state):
         # TO DO: Implement policy
-        action = None
-        return action
+        if np.random.random() < self.epsilon:
+            return np.random.randint(self.n_actions)
+        else:
+            return np.argmax(self.Q[state])
         
     def update(self, states, actions, rewards, done): # Augment arguments if necessary
         # TO DO: Implement n-step SARSA update
