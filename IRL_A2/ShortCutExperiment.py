@@ -56,6 +56,8 @@ def run_repetitions(n_rep=100, n_episodes=1000, agent_type="qlearning"):
         plot_text = "Q-Learning"
     elif agent_type == "sarsa":
         plot_text = "SARSA"
+    else:
+        plot_text = "AGENT"
     plt.title(f"{plot_text}: Average Learning Curve (100 Repetitions)")
     plt.xlabel("Episode")
     plt.ylabel("Average Cumulative Reward")
@@ -99,6 +101,8 @@ def run_alpha_experiment(alphas, n_rep=100, n_episodes=1000, agent_type="qlearni
         plot_text = "Q-Learning"
     elif agent_type == "sarsa":
         plot_text = "SARSA"
+    else:
+        plot_text = "AGENT"
     plt.title(f'{plot_text}: Impact of Learning Rate (Alpha)')
     plt.legend()
     plt.grid(True)
