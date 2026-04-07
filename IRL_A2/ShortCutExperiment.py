@@ -16,20 +16,29 @@ def single_run(n_episodes=10000, environment=ShortcutEnvironment):
     env = environment()
     agent = QLearningAgent(env.action_size(), env.state_size())
     reward_vector = agent.train(n_episodes, env)
+
+
+    window_size = 100
+    smoothed_rewards = np.convolve(reward_vector, np.ones(window_size) / window_size, mode='valid')
     print("Final Greedy Policy Map:")
     env.render_greedy(agent.Q)
 
     plt.figure(figsize=(10, 6))
-    plt.plot(reward_vector)
-    plt.xlabel('Episodes')
-    plt.ylabel('Cumulative Reward')
-    plt.title('Q-Learning Performance')
+    plt.plot(smoothed_rewards, label='Smoothed Reward', linewidth=2)
+    plt.xlabel('Episodes', fontsize=20)
+    plt.ylabel('Cumulative Reward', fontsize=20)
+    plt.title(f'Q-Learning Performance (Smoothed window={window_size})', fontsize=20)
+    plt.ylim(-300, 10)
+    plt.legend(fontsize=20)
     plt.grid(True)
+    plt.xticks(fontsize=20)
+    plt.yticks(fontsize=20)
     plt.show()
     return agent, env
 
+
 # single run
-# a, e = single_run(10000, WindyShortcutEnvironment)
+a, e = single_run(10000, ShortcutEnvironment)
 
 
 
@@ -156,5 +165,5 @@ def run_windy_comparison():
     print("We can see that SARSA is a pussy.")
 
 
-run_windy_comparison()
+#run_windy_comparison()
 
