@@ -1,6 +1,9 @@
 # Write your experiments in here! You can use the plotting helper functions from the previous assignment if you want.
 import numpy as np
 import matplotlib
+from matplotlib import colors
+from pyparsing import lineEnd
+
 # easier to load a window than opening an image for every plot
 matplotlib.use('TkAgg') # Or 'Qt5Agg' if you have PyQt installed
 import matplotlib.pyplot as plt
@@ -14,7 +17,7 @@ from ShortCutEnvironment import ShortcutEnvironment, WindyShortcutEnvironment
 def single_run(n_episodes=10000, environment=ShortcutEnvironment):
     # agent, env = single_run(10000, WindyShortcutEnvironment)
     env = environment()
-    agent = QLearningAgent(env.action_size(), env.state_size())
+    agent = SARSAAgent(env.action_size(), env.state_size())
     reward_vector = agent.train(n_episodes, env)
 
 
@@ -24,10 +27,10 @@ def single_run(n_episodes=10000, environment=ShortcutEnvironment):
     env.render_greedy(agent.Q)
 
     plt.figure(figsize=(10, 6))
-    plt.plot(smoothed_rewards, label='Smoothed Reward', linewidth=2)
+    plt.plot(smoothed_rewards, label='Smoothed Reward', linewidth=2, color='#FF6347')
     plt.xlabel('Episodes', fontsize=20)
     plt.ylabel('Cumulative Reward', fontsize=20)
-    plt.title(f'Q-Learning Performance (Smoothed window={window_size})', fontsize=20)
+    plt.title(f'SARSA Performance (Smoothed window={window_size})', fontsize=20)
     plt.ylim(-300, 10)
     plt.legend(fontsize=20)
     plt.grid(True)
@@ -38,7 +41,7 @@ def single_run(n_episodes=10000, environment=ShortcutEnvironment):
 
 
 # single run
-a, e = single_run(10000, ShortcutEnvironment)
+#a, e = single_run(10000, ShortcutEnvironment)
 
 
 
@@ -60,7 +63,11 @@ def run_repetitions(n_rep=100, n_episodes=1000, agent_type="qlearning"):
     avg_rewards = np.mean(data_grid, axis=0)
 
     plt.figure(figsize=(10, 5))
-    plt.plot(avg_rewards)
+    plt.rcParams.update({'font.size': 16})  # Increases all text
+
+    plt.tight_layout()  # Prevents label clipping
+
+    plt.plot(avg_rewards, linewidth=2)
     if agent_type == "qlearning":
         plot_text = "Q-Learning"
     elif agent_type == "sarsa":
@@ -98,12 +105,14 @@ def run_alpha_experiment(alphas, n_rep=100, n_episodes=1000, agent_type="qlearni
 
 
         avg_rewards = np.mean(all_runs, axis=0)
+        plt.rcParams.update({'font.size': 19})  # Increases all text
+        # We use a window of 100
+        smoothed_rewards = np.convolve(avg_rewards, np.ones(100) / 100, mode='valid')
 
-        # We use a window of 20
-        smoothed_rewards = np.convolve(avg_rewards, np.ones(20) / 20, mode='valid')
+        plt.plot(smoothed_rewards, label=f'alpha = {a}', linewidth=1.5)
 
-        plt.plot(smoothed_rewards, label=f'alpha = {a}')
 
+    plt.tight_layout()
     plt.xlabel('Episodes')
     plt.ylabel('Average Cumulative Reward (Smoothed)')
     if agent_type == "qlearning":
@@ -118,7 +127,8 @@ def run_alpha_experiment(alphas, n_rep=100, n_episodes=1000, agent_type="qlearni
     plt.show()
 
 # test_alphas = [0.01, 0.1, 0.5, 0.9]
-# run_alpha_experiment(test_alphas, agent_type="sarsa")
+#
+# run_alpha_experiment(test_alphas, agent_type="sarsa", n_episodes=1000)
 
 
 def get_path(env, agent, start_row="top"):
@@ -165,5 +175,5 @@ def run_windy_comparison():
     print("We can see that SARSA is a pussy.")
 
 
-#run_windy_comparison()
+run_windy_comparison()
 

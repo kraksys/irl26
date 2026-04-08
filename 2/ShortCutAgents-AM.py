@@ -36,7 +36,7 @@ class QLearningAgent(object):
         # Return a vector with the cumulative reward (=return) per episode
 
         episode_returns = []
-        for episode in tqdm(range(n_episodes), desc="Training Agent"):
+        for episode in range(n_episodes):
             total_reward = 0
             env.reset()
 
