@@ -289,7 +289,7 @@ class WindyShortcutEnvironment(Environment):
             Q: Q-table with shape [state_size, action_size]
         """
         display_grid = np.full((self.r, self.c), " ", dtype=object)
-        arrow_map = ["↑", "↓", "←", "→"]
+        arrow_map = ["↑", "↓", "<", ">"]
     
         for y in range(self.r):
             for x in range(self.c):
