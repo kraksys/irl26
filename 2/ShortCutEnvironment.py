@@ -338,7 +338,10 @@ if __name__ == "__main__":
     env.render()
     
     # Render greedy policy    
-    Q = np.zeros([env.state_size(),env.action_size()])    
+    Q = np.zeros([env.state_size(),env.action_size()])
+    # I am having issues rendering this one from the pycharm terminal
     env.render_greedy_simple(Q) # Old version
+
+    print("----------------------------------------------------")
     env.render_greedy(Q) # Nicer lay-out for your report
     
