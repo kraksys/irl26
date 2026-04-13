@@ -24,10 +24,19 @@ from ShortCutAgents import QLearningAgent, SARSAAgent, ExpectedSARSAAgent, nStep
 from ShortCutEnvironment import ShortcutEnvironment, WindyShortcutEnvironment  
 
 # smoothing curve function
-def smooth_curve(values, window=20):
+def smooth_curve(values, window=100):
+    values = np.asarray(values, dtype=float)
+
     if window <= 1: 
-        return values 
-    return np.convolve(values, np.ones(window) / window, mode="valid") 
+        episodes = np.arange(1, len(values) + 1)
+        return episodes, values 
+
+    window = min(window, len(values)) 
+
+    smoothed = np.convolve(values, np.ones(window) / window, mode="valid") 
+
+    episodes = np.arange(window, len(values) + 1) 
+    return episodes, smoothed
 
 # a helper to make agents with different paramters 
 def make_agent(agent_type, env, alpha=0.1, epsilon=0.1, gamma=1.0, n=1):
@@ -89,12 +98,12 @@ def run_repetitions(n_rep=100, n_episodes=1000, agent_type="qlearning", environm
 
 
 # Helper for single experiment curve plotting 
-def plot_curve(rewards, title, filename, window=20, ylabel="Average Cumulative Reward"):
+def plot_curve(rewards, title, filename, window=100, ylabel="Average Cumulative Reward"):
     Path("results").mkdir(exist_ok=True) 
-    smooth_rewards = smooth_curve(rewards, window)
+    x,y = smooth_curve(rewards, window)
 
     plt.figure(figsize=(10, 6))
-    plt.plot(smooth_rewards, label="Smoothed Reward", linewidth=1.4)
+    plt.plot(x,y , label=f"Moving average, window={window}", linewidth=1.4)
     plt.xlabel("Episodes", fontsize=14) 
     plt.ylabel(ylabel, fontsize=14) 
     plt.title(title, fontsize=16) 
@@ -107,17 +116,18 @@ def plot_curve(rewards, title, filename, window=20, ylabel="Average Cumulative R
 
 
 # Helper for multi-curve plotting 
-def plot_many_curves(curves, title, filename, window=20):
+def plot_many_curves(curves, title, filename, window=100):
     Path("results").mkdir(exist_ok=True) 
 
     plt.figure(figsize=(10,6))
     for label, rewards in curves.items():
-        plt.plot(smooth_curve(rewards, window), label=label, linewidth=1.4)
+        x,y = smooth_curve(rewards, window) 
+        plt.plot(x,y , label=label, linewidth=1.4) 
 
-    plt.xlabel("Episodes", fontsize=14)
-    plt.ylabel("Average Cumulative Reward", fontsize=14)
+    plt.xlabel("Episode", fontsize=14)
+    plt.ylabel("Average Episode Return", fontsize=14)
     plt.title(title, fontsize=16)
-    plt.ylim(-300, 10)
+    plt.ylim(-800, 10)
     plt.legend() 
     plt.grid(True) 
     plt.tight_layout() 
@@ -193,21 +203,21 @@ def run_all_experiments():
     n_values = [1,2,5,10,25]
 
     q_rewards, q_agent, q_env = single_run("qlearning")
-    plot_curve(q_rewards, "Q-Learning Performance", "qlearning_single.png", window=100)
+    plot_curve(q_rewards, "Q-Learning Performance", "qlearning_single.png", window=100, ylabel="Episode Return")
     save_greedy_policy(q_agent, q_env, "qlearning_greedy.svg", "Q-Learning Greedy Policy")
     
     q_avg = run_repetitions(agent_type="qlearning")[0]
-    plot_curve(q_avg, "Q-Learning Average Learning Curve", "qlearning_mean.png", window=100)
+    plot_curve(q_avg, "Q-Learning Average Learning Curve", "qlearning_mean.png", window=100, ylabel="Average Episode Return")
 
     q_alphas = run_alpha_experiment(alphas, agent_type="qlearning")
-    plot_many_curves(q_alphas, "Q-Learning: Impact of Learning Rate", "qlearning_alpha_sweep.png") 
+    plot_many_curves(q_alphas, "Q-Learning: Impact of Learning Rate", "qlearning_alpha_sweep.png", window=100) 
 
     s_rewards, s_agent, s_env = single_run("sarsa")
-    plot_curve(s_rewards, "SARSA Performane", "sarsa_single.png", window=100) 
+    plot_curve(s_rewards, "SARSA Performane", "sarsa_single.png", window=100, ylabel="Episode Return") 
     save_greedy_policy(s_agent, s_env, "sarsa_greedy.svg", "SARSA Greedy Policy") 
 
     s_avg = run_repetitions(agent_type="sarsa")[0]
-    plot_curve(s_avg, "SARSA Average Learning Curve", "sarsa_mean.png")
+    plot_curve(s_avg, "SARSA Average Learning Curve", "sarsa_mean.png", ylabel="Average Episode Returns")
 
     s_alphas = run_alpha_experiment(alphas, agent_type="sarsa")
     plot_many_curves(s_alphas, "SARSA: Impact of Learning Rate", "sarsa_alpha_sweep.png")
@@ -219,20 +229,20 @@ def run_all_experiments():
     save_greedy_policy(windy_s, windy_s_env, "windy_sarsa_greedy.svg", "Windy SARSA Greedy Policy")
 
     e_rewards, e_agent, e_env = single_run("expectedsarsa")[0:3]
-    plot_curve(e_rewards, "Expected SARSA Performance", "expected_sarsa_single.png", window=100)
+    plot_curve(e_rewards, "Expected SARSA Performance", "expected_sarsa_single.png", window=100, ylabel="Episode Return")
     save_greedy_policy(e_agent, e_env, "expected_sarsa_greedy.svg", "Expected SARSA Greedy Policy") 
 
     e_avg = run_repetitions(agent_type="expectedsarsa")[0]
-    plot_curve(e_avg, "Expected SARSA Average Learning Curve", "expected_sarsa_mean.png") 
+    plot_curve(e_avg, "Expected SARSA Average Learning Curve", "expected_sarsa_mean.png", window=100) 
 
     e_alphas = run_alpha_experiment(alphas, agent_type="expectedsarsa") 
-    plot_many_curves(e_alphas, "Expected SARSA: Impact of Learning Rate", "expected_sarsa_alpha_sweep.png")
+    plot_many_curves(e_alphas, "Expected SARSA: Impact of Learning Rate", "expected_sarsa_alpha_sweep.png", window=100)
 
     n_rewards = single_run("nstepsarsa", n=1)[0]
-    plot_curve(n_rewards, "n-step SARSA Performance", "nstepsarsa_single.png", window=100)
+    plot_curve(n_rewards, "n-step SARSA Performance", "nstepsarsa_single.png", window=100, ylabel="Episode Return")
 
     n_results = run_n_experiment(n_values) 
-    plot_many_curves(n_results, "n-step SARSA: Impact of n", "nstepsarsa_n_sweep.png")
+    plot_many_curves(n_results, "n-step SARSA: Impact of n", "nstepsarsa_n_sweep.png", window=100)
 
     q_label, q_best = best_curve(q_alphas) 
     s_label, s_best = best_curve(s_alphas) 
@@ -246,7 +256,7 @@ def run_all_experiments():
         f"n-step SARSA ({n_label})": n_best, 
     }
 
-    plot_many_curves(best_curves, "Best Parameters Across All Experiments", "best_param_comparison.png")
+    plot_many_curves(best_curves, "Best Parameters Across All Experiments", "best_param_comparison.png", window=100)
 
 if __name__ == "__main__":
     run_all_experiments() 
