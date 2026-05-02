@@ -18,6 +18,28 @@ import matplotlib
 
 matplotlib.use("Agg") 
 import matplotlib.pyplot as plt
+
+plt.rcParams.update({
+    "font.size": 16,
+    "axes.labelsize": 20,
+    "axes.titlesize": 20,
+    "xtick.labelsize": 16, 
+    "ytick.labelsize": 16, 
+    "legend.fontsize": 16,
+    "axes.grid": True, 
+    "grid.alpha": 0.25, 
+    "legend.frameon": False,
+    "figure.dpi": 120,
+    "savefig.dpi": 300,
+})
+
+plot_colors = {
+    "qlearning": "#1f77b4",
+    "sarsa": "#d55e00",
+    "expectedsarsa": "#2ca02c",
+    "nstepsarsa": "#cc79a7",
+}
+
 from tqdm import tqdm 
 
 from ShortCutAgents import QLearningAgent, SARSAAgent, ExpectedSARSAAgent, nStepSARSAAgent
@@ -98,15 +120,15 @@ def run_repetitions(n_rep=100, n_episodes=1000, agent_type="qlearning", environm
 
 
 # Helper for single experiment curve plotting 
-def plot_curve(rewards, title, filename, window=100, ylabel="Average Cumulative Reward"):
+def plot_curve(rewards, title, filename, window=100, ylabel="Average Cumulative Reward", color=None):
     Path("results").mkdir(exist_ok=True) 
     x,y = smooth_curve(rewards, window)
 
     plt.figure(figsize=(10, 6))
-    plt.plot(x,y , label=f"Moving average, window={window}", linewidth=1.4)
-    plt.xlabel("Episodes", fontsize=14) 
-    plt.ylabel(ylabel, fontsize=14) 
-    plt.title(title, fontsize=16) 
+    plt.plot(x,y , label=f"Moving average, window={window}", linewidth=1.4, linestyle="-", color=color)
+    plt.xlabel("Episodes", fontsize=20) 
+    plt.ylabel(ylabel, fontsize=20) 
+    plt.title(title, fontsize=20) 
     plt.ylim(-300, 10)
     plt.legend()
     plt.grid(True) 
@@ -116,18 +138,18 @@ def plot_curve(rewards, title, filename, window=100, ylabel="Average Cumulative 
 
 
 # Helper for multi-curve plotting 
-def plot_many_curves(curves, title, filename, window=100):
+def plot_many_curves(curves, title, filename, window=100, colors=None, ylim=(-800, 10)):
     Path("results").mkdir(exist_ok=True) 
 
     plt.figure(figsize=(10,6))
     for label, rewards in curves.items():
         x,y = smooth_curve(rewards, window) 
-        plt.plot(x,y , label=label, linewidth=1.4) 
+        plt.plot(x,y , label=label, linewidth=1.4, linestyle="-", color= None if colors is None else colors.get(label)) 
 
-    plt.xlabel("Episode", fontsize=14)
-    plt.ylabel("Average Episode Return", fontsize=14)
-    plt.title(title, fontsize=16)
-    plt.ylim(-800, 10)
+    plt.xlabel("Episode", fontsize=20)
+    plt.ylabel("Average Episode Return", fontsize=20)
+    plt.title(title, fontsize=20)
+    plt.ylim(*ylim) 
     plt.legend() 
     plt.grid(True) 
     plt.tight_layout() 
@@ -203,21 +225,21 @@ def run_all_experiments():
     n_values = [1,2,5,10,25]
 
     q_rewards, q_agent, q_env = single_run("qlearning")
-    plot_curve(q_rewards, "Q-Learning Performance", "qlearning_single.png", window=100, ylabel="Episode Return")
+    plot_curve(q_rewards, "Q-Learning Performance", "qlearning_single.png", window=100, ylabel="Episode Return", color=plot_colors["qlearning"])
     save_greedy_policy(q_agent, q_env, "qlearning_greedy.svg", "Q-Learning Greedy Policy")
     
     q_avg = run_repetitions(agent_type="qlearning")[0]
-    plot_curve(q_avg, "Q-Learning Average Learning Curve", "qlearning_mean.png", window=100, ylabel="Average Episode Return")
+    plot_curve(q_avg, "Q-Learning Average Learning Curve", "qlearning_mean.png", window=100, ylabel="Average Episode Return", color=plot_colors["qlearning"])
 
     q_alphas = run_alpha_experiment(alphas, agent_type="qlearning")
     plot_many_curves(q_alphas, "Q-Learning: Impact of Learning Rate", "qlearning_alpha_sweep.png", window=100) 
 
     s_rewards, s_agent, s_env = single_run("sarsa")
-    plot_curve(s_rewards, "SARSA Performane", "sarsa_single.png", window=100, ylabel="Episode Return") 
+    plot_curve(s_rewards, "SARSA Performance", "sarsa_single.png", window=100, ylabel="Episode Return", color=plot_colors["sarsa"]) 
     save_greedy_policy(s_agent, s_env, "sarsa_greedy.svg", "SARSA Greedy Policy") 
 
     s_avg = run_repetitions(agent_type="sarsa")[0]
-    plot_curve(s_avg, "SARSA Average Learning Curve", "sarsa_mean.png", ylabel="Average Episode Returns")
+    plot_curve(s_avg, "SARSA Average Learning Curve", "sarsa_mean.png", ylabel="Average Episode Returns", color=plot_colors["sarsa"])
 
     s_alphas = run_alpha_experiment(alphas, agent_type="sarsa")
     plot_many_curves(s_alphas, "SARSA: Impact of Learning Rate", "sarsa_alpha_sweep.png")
@@ -229,17 +251,17 @@ def run_all_experiments():
     save_greedy_policy(windy_s, windy_s_env, "windy_sarsa_greedy.svg", "Windy SARSA Greedy Policy")
 
     e_rewards, e_agent, e_env = single_run("expectedsarsa")[0:3]
-    plot_curve(e_rewards, "Expected SARSA Performance", "expected_sarsa_single.png", window=100, ylabel="Episode Return")
+    plot_curve(e_rewards, "Expected SARSA Performance", "expected_sarsa_single.png", window=100, ylabel="Episode Return", color=plot_colors["expectedsarsa"])
     save_greedy_policy(e_agent, e_env, "expected_sarsa_greedy.svg", "Expected SARSA Greedy Policy") 
 
     e_avg = run_repetitions(agent_type="expectedsarsa")[0]
-    plot_curve(e_avg, "Expected SARSA Average Learning Curve", "expected_sarsa_mean.png", window=100) 
+    plot_curve(e_avg, "Expected SARSA Average Learning Curve", "expected_sarsa_mean.png", window=100, color=plot_colors["expectedsarsa"]) 
 
     e_alphas = run_alpha_experiment(alphas, agent_type="expectedsarsa") 
     plot_many_curves(e_alphas, "Expected SARSA: Impact of Learning Rate", "expected_sarsa_alpha_sweep.png", window=100)
 
     n_rewards = single_run("nstepsarsa", n=1)[0]
-    plot_curve(n_rewards, "n-step SARSA Performance", "nstepsarsa_single.png", window=100, ylabel="Episode Return")
+    plot_curve(n_rewards, "n-step SARSA Performance", "nstepsarsa_single.png", window=100, ylabel="Episode Return", color=plot_colors["nstepsarsa"])
 
     n_results = run_n_experiment(n_values) 
     plot_many_curves(n_results, "n-step SARSA: Impact of n", "nstepsarsa_n_sweep.png", window=100)
@@ -256,7 +278,14 @@ def run_all_experiments():
         f"n-step SARSA ({n_label})": n_best, 
     }
 
-    plot_many_curves(best_curves, "Best Parameters Across All Experiments", "best_param_comparison.png", window=100)
+    best_colors = {
+        f"Q-Learning ({q_label})": plot_colors["qlearning"],
+        f"SARSA ({s_label})": plot_colors["sarsa"],
+        f"Expected SARSA ({e_label})": plot_colors["expectedsarsa"],
+        f"n-step SARSA ({n_label})": plot_colors["nstepsarsa"],
+    }
+
+    plot_many_curves(best_curves, "Best Parameters Across All Experiments", "best_param_comparison.png", window=100, colors=best_colors, ylim=(-200, 10))
 
 if __name__ == "__main__":
     run_all_experiments() 
