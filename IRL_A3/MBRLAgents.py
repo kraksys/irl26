@@ -31,7 +31,7 @@ class DynaAgent:
         else:
             a = np.random.randint(0,self.n_actions)
         return a
-        
+
     def update(self,s,a,r,done,s_next,n_planning_updates):
 
         self.transition_counts[s, a, s_next] += 1
@@ -91,23 +91,63 @@ class PrioritizedSweepingAgent:
         self.gamma = gamma
         self.priority_cutoff = priority_cutoff
         self.queue = PriorityQueue()
-        # TO DO: Initialize relevant elements
-        
+        #Initialize relevant elements
+        self.Q_sa = np.zeros((n_states, n_actions))
+        self.transition_counts = np.zeros((n_states, n_actions, n_states))
+        self.rewards = np.zeros((n_states, n_actions, n_states))
+
     def select_action(self, s, epsilon):
-        # TO DO: Change this to e-greedy action selection
-        a = np.random.randint(0,self.n_actions) # Replace this with correct action selection
+        # e-greedy action selection
+        if np.random.random() > epsilon:
+            a = np.argmax(self.Q_sa[s])
+        else:
+            a = np.random.randint(0, self.n_actions)
         return a
         
     def update(self,s,a,r,done,s_next,n_planning_updates):
-        
-        # TO DO: Add Prioritized Sweeping code
-        
         # Helper code to work with the queue
         # Put (s,a) on the queue with priority p (needs a minus since the queue pops the smallest priority first)
         # self.queue.put((-p,(s,a))) 
         # Retrieve the top (s,a) from the queue
         # _,(s,a) = self.queue.get() # get the top (s,a) for the queue
-        pass
+
+        self.transition_counts[s, a, s_next] += 1
+        self.rewards[s, a, s_next] += r
+
+        # add to que
+        if done:
+            td_error = abs(r - self.Q_sa[s, a])
+        else:
+            td_error = abs(r + self.gamma * np.max(self.Q_sa[s_next]) - self.Q_sa[s, a])
+
+        if td_error > self.priority_cutoff:
+            self.queue.put((-td_error, (s, a)))
+
+        for i in range(n_planning_updates):
+            if self.queue.empty():
+                break
+
+            _, (s_simulated, a_simulated) = self.queue.get()
+
+            # same simulation as dyna
+            counts = self.transition_counts[s_simulated, a_simulated]
+            probs = counts / counts.sum()
+            s_simulated_next = np.random.choice(self.n_states, p=probs)
+            r_simulated = self.rewards[s_simulated, a_simulated, s_simulated_next] / self.transition_counts[s_simulated, a_simulated, s_simulated_next]
+
+            # update
+            self.Q_sa[s_simulated, a_simulated] += self.learning_rate * (r_simulated + self.gamma * np.max(self.Q_sa[s_simulated_next]) - self.Q_sa[s_simulated, a_simulated])
+
+            # This looks a bit cluttered but it just looks at all the pairs (state, action) that can lead to the just
+            # simulated state and checks whether their estimate for it needs to change.
+
+            # everything that can lead to s_simulated
+            predecessors = np.argwhere(self.transition_counts[:, :, s_simulated] > 0)
+            for s_pred, a_pred in predecessors:
+                r_new_est = self.rewards[s_pred, a_pred, s_simulated] / self.transition_counts[s_pred, a_pred, s_simulated]
+                td_error_new_est = abs(r_new_est + self.gamma * np.max(self.Q_sa[s_simulated]) - self.Q_sa[s_pred, a_pred])
+                if td_error_new_est > self.priority_cutoff:
+                    self.queue.put((-td_error_new_est, (s_pred, a_pred)))
 
     def evaluate(self,eval_env,n_eval_episodes=30, max_episode_length=100):
         returns = []  # list to store the reward per episode
