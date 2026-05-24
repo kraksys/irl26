@@ -296,7 +296,7 @@ def experiment():
                 "n_planning_updates": 0,
                 "mean_runtime": np.mean(q_runtimes[wind_proportion]),
                 "std_runtime": np.std(q_runtimes[wind_proportion]),
-                "final_return": q_results[wind_proportion][-1],
+                "final_return": np.mean(q_results[wind_proportion][int(len(q_results[wind_proportion]) * 0.8):]),
             }
         )
 
@@ -307,7 +307,7 @@ def experiment():
                 "n_planning_updates": best_dyna,
                 "mean_runtime": np.mean(dyna_runtimes[wind_proportion][best_dyna]),
                 "std_runtime": np.std(dyna_runtimes[wind_proportion][best_dyna]),
-                "final_return": best_dyna_curve[-1],
+                "final_return": np.mean(best_dyna_curve[int(len(best_dyna_curve) * 0.8):]),
             }
         )
 
@@ -318,7 +318,7 @@ def experiment():
                 "n_planning_updates": best_ps,
                 "mean_runtime": np.mean(ps_runtimes[wind_proportion][best_ps]),
                 "std_runtime": np.std(ps_runtimes[wind_proportion][best_ps]),
-                "final_return": best_ps_curve[-1],
+                "final_return": np.mean(best_ps_curve[int(len(best_ps_curve) * 0.8):]),
             }
         )
 
