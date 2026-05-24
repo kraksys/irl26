@@ -86,8 +86,9 @@ def select_best(curves):
     best_return = -np.inf
 
     for n_plan, curve in curves.items():
-        if curve[-1] > best_return:
-            best_return = curve[-1]
+        score = np.mean(curve[int(len(curve) * 0.8):])
+        if score > best_return:
+            best_return = score
             best_plan = n_plan
             best_curve = curve
 
