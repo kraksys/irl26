@@ -27,6 +27,7 @@ def run_repetitions(
     epsilon,
     n_planning_updates,
     wind_proportion,
+    default_reward_per_timestep=-1.0 # to test our reflection hypothesis
 ):
     all_curves = []
     runtimes = []
@@ -37,8 +38,8 @@ def run_repetitions(
         desc=f"{agent_class.__name__} n_plan={n_planning_updates}, wind={wind_proportion}",
     ):
         # initialize a new environment and agent from scratch each repetition
-        env = WindyGridworld(wind_proportion=wind_proportion)
-        eval_env = WindyGridworld(wind_proportion=wind_proportion)
+        env = WindyGridworld(wind_proportion=wind_proportion, default_reward_per_timestep=default_reward_per_timestep)
+        eval_env = WindyGridworld(wind_proportion=wind_proportion, default_reward_per_timestep=default_reward_per_timestep)
         agent = agent_class(env.n_states, env.n_actions, learning_rate, gamma)
 
         s = env.reset()
@@ -149,6 +150,60 @@ def save_runtime_table(runtime_rows):
 
     print("Saved runtime table...")
 
+# to test hypothesis with initializing Q as something else
+def experiment_default_reward_effect():
+    n_timesteps = 10001 
+    eval_interval = 250
+    n_repetitions = 20
+    gamma = 1.0
+    learning_rate = 0.2
+    epsilon = 0.1
+
+    wind_proportion = 0.9
+    n_planning_updates = 1 
+    smoothing_window = 11
+
+    plot = LearningCurvePlot(title="Effect of default step reward on Dyna (wind=0.9)")
+
+    ts, curve_minus_one, _ = run_repetitions(
+        DynaAgent, 
+        n_timesteps, 
+        n_repetitions,
+        eval_interval, 
+        gamma, 
+        learning_rate, 
+        epsilon, 
+        n_planning_updates=n_planning_updates,
+        wind_proportion=wind_proportion, 
+        default_reward_per_timestep=-1.0,
+    )
+
+    ts, curve_zero, _ = run_repetitions(
+        DynaAgent, 
+        n_timesteps, 
+        n_repetitions,
+        eval_interval,
+        gamma, 
+        learning_rate,
+        epsilon,
+        n_planning_updates=n_planning_updates,
+        wind_proportion=wind_proportion,
+        default_reward_per_timestep=-0.1,
+    )
+
+    plot.add_curve(
+        ts, 
+        smooth(curve_minus_one, smoothing_window),
+        label="Default reward = -1",
+    )
+
+    plot.add_curve(
+        ts, 
+        smooth(curve_zero, smoothing_window),
+        label="Default reward = -0.1",
+    )
+    
+    plot.save("default_reward_effect.png")
 
 def experiment():
     n_timesteps = 10001
@@ -289,6 +344,7 @@ def experiment():
             smoothing_window=smoothing_window,
         )
 
+        
         runtime_rows.append(
             {
                 "algorithm": "Q-Learning",
@@ -327,3 +383,4 @@ def experiment():
 
 if __name__ == "__main__":
     experiment()
+    experiment_default_reward_effect()

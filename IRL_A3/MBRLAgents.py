@@ -115,6 +115,9 @@ class PrioritizedSweepingAgent:
         self.gamma = gamma
         self.priority_cutoff = priority_cutoff
         self.queue = PriorityQueue()
+        # a dictionary to keep track of what is the current priority, to avoid re-using stale entries
+        self.latest_priority = {} 
+
         # Initialize relevant elements
         self.Q_sa = np.zeros((n_states, n_actions))
         self.transition_counts = np.zeros((n_states, n_actions, n_states))
@@ -138,20 +141,32 @@ class PrioritizedSweepingAgent:
         self.transition_counts[s, a, s_next] += 1
         self.rewards[s, a, s_next] += r
 
-        # add to queue
+        # add to queue if the td error is large enough
         if done:
             td_error = abs(r - self.Q_sa[s, a])
         else:
             td_error = abs(r + self.gamma * np.max(self.Q_sa[s_next]) - self.Q_sa[s, a])
 
         if td_error > self.priority_cutoff:
-            self.queue.put((-td_error, (s, a)))
+            key = (s,a) 
+            self.latest_priority[key] = td_error 
+            self.queue.put((-td_error, key))
+        else: 
+            self.latest_priority.pop((s, a), None) 
 
         for i in range(n_planning_updates):
-            if self.queue.empty():
-                break
 
-            _, (s_simulated, a_simulated) = self.queue.get()
+            # pop until we find a fresh entry
+            while not self.queue.empty():
+                neg_priority, (s_simulated, a_simulated) = self.queue.get()
+                priority = -neg_priority 
+                key = (s_simulated, a_simulated) 
+
+                if self.latest_priority.get(key) == priority: 
+                    del self.latest_priority[key] 
+                    break 
+            else: 
+                break 
 
             # same simulation as dyna
             counts = self.transition_counts[s_simulated, a_simulated]
@@ -174,7 +189,7 @@ class PrioritizedSweepingAgent:
                 target - self.Q_sa[s_simulated, a_simulated]
             )
 
-            # This looks a bit cluttered but it just looks at all the pairs (state, action) that can lead to the just
+            # The following part looks at all the pairs (state, action) that can lead to the 
             # simulated state and checks whether their estimate for it needs to change.
 
             # everything that can lead to s_simulated
@@ -196,7 +211,11 @@ class PrioritizedSweepingAgent:
                     )
 
                 if td_error_new_est > self.priority_cutoff:
-                    self.queue.put((-td_error_new_est, (s_pred, a_pred)))
+                    key = (s_pred, a_pred)
+                    self.latest_priority[key] = td_error_new_est
+                    self.queue.put((-td_error_new_est, key))
+                else: 
+                    self.latest_priority.pop((s_pred, a_pred), None) 
 
     def evaluate(self, eval_env, n_eval_episodes=30, max_episode_length=100):
         returns = []  # list to store the reward per episode
