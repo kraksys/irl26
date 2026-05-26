@@ -446,13 +446,13 @@ def experiment_long():
 
         plot = LearningCurvePlot(title=f"Long-run comparison - {label} (wind={wind_proportion})")
         plot.add_curve(ts_q, smooth(curve_q, smoothing_window), label="Q-Learning")
-        plot.add_curve(ts_dyna, smooth(curve_dyna, smoothing_window), label=f"Best Dyna n={best_dyna_n[wind_proportion]}")
-        plot.add_curve(ts_ps, smooth(curve_ps, smoothing_window), label=f"Best PS n={best_ps_n[wind_proportion]}")
+        plot.add_curve(ts_dyna, smooth(curve_dyna, smoothing_window), label=f"Best Dyna K={best_dyna_n[wind_proportion]}")
+        plot.add_curve(ts_ps, smooth(curve_ps, smoothing_window), label=f"Best PS K={best_ps_n[wind_proportion]}")
         plot.save(f"long_{label}.png")
         print(f"Saved long_{label}.png")
 
 
 if __name__ == "__main__":
-    # experiment()
+    experiment()
     experiment_long()
     experiment_default_reward_effect()
