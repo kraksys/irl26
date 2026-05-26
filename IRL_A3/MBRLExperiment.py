@@ -152,6 +152,7 @@ def save_runtime_table(runtime_rows):
 
 # to test hypothesis with initializing Q as something else
 def experiment_default_reward_effect():
+    np.random.seed(70)
     n_timesteps = 10001 
     eval_interval = 250
     n_repetitions = 20
@@ -231,7 +232,8 @@ def experiment_default_reward_effect():
 
     ps_plot.save("default_reward_effect_ps.png")
 
-def experiment():
+def experiment(): 
+    np.random.seed(70)
     n_timesteps = 10001
     eval_interval = 250
     n_repetitions = 20
@@ -408,6 +410,7 @@ def experiment():
 
 
 def experiment_long():
+    np.random.seed(70)
     n_timesteps = 50001
     eval_interval = 250
     n_repetitions = 20
