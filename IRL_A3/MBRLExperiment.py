@@ -150,7 +150,7 @@ def save_runtime_table(runtime_rows):
 
     print("Saved runtime table...")
 
-# to test hypothesis with initializing Q as something else
+# to test hypothesis of varying default rewards
 def experiment_default_reward_effect():
     np.random.seed(70)
     n_timesteps = 10001 
@@ -161,78 +161,83 @@ def experiment_default_reward_effect():
     epsilon = 0.1
 
     wind_proportion = 0.9
-    planning_budgets = [1,3,5]
-    reward_values = [-1.0, -0.1]
+    n_planning_updates = 1
+    reward_values = [-1.0, -0.1, 0.0]
     smoothing_window = 11
 
     colors = {
-        (-1.0, 1): "tab:blue", 
-        (-1.0, 3): "tab:orange",
-        (-1.0, 5): "tab:green",
-        (-0.1, 1): "tab:red",
-        (-0.1, 3): "tab:purple",
-        (-0.1, 5): "tab:brown"
+        -1.0: "tab:blue",
+        -0.1: "tab:orange",
+        0.0: "tab:green"
     }
 
-    dyna_plot = LearningCurvePlot(title="Default Reward Adjustment Dyna - Stochastic WGW (wind=0.9)")
+    linestyles = {
+        -1.0: "-",
+        -0.1: "--",
+        0.0: ":"
+    }
+
+    dyna_plot = LearningCurvePlot(title="Default Reward Comparison Dyna (K=1), Stochastic WGW")
 
     for reward in reward_values: 
-        for k in planning_budgets:
-            ts, curve, _ = run_repetitions(
-                DynaAgent,
-                n_timesteps,
-                n_repetitions,
-                eval_interval,
-                gamma, 
-                learning_rate,
-                epsilon,
-                n_planning_updates=k,
-                wind_proportion=wind_proportion,
-                default_reward_per_timestep=reward
-            )
+      
+        ts, curve, _ = run_repetitions(
+            DynaAgent,
+            n_timesteps,
+            n_repetitions,
+            eval_interval,
+            gamma, 
+            learning_rate,
+            epsilon,
+            n_planning_updates=n_planning_updates,
+            wind_proportion=wind_proportion,
+            default_reward_per_timestep=reward
+        )
 
-            label = f"Reward = {reward}, K={k}"
-            dyna_plot.ax.plot(
-                ts,
-                smooth(curve, smoothing_window),
-                label=label,
-                color=colors[(reward, k)]
-            )
+        label = f"Reward = {reward}, K=1"
+        dyna_plot.ax.plot(
+            ts,
+            smooth(curve, smoothing_window),
+            label=f"Dyna, Reward = {reward}",
+            color=colors[reward],
+            linestyle=linestyles[reward],
+            linewidth=2.0
+        )
     
     dyna_plot.save("default_reward_effect_dyna.png")
 
     # Prioritized Sweeping comparison 
 
     ps_plot = LearningCurvePlot(
-        title="Default Reward Adjustment PS - Stochastic WGW (wind=0.9)"
+        title="Default Reward Comparison PS (K=1), Stochastic WGW"
     )
 
     for reward in reward_values:
-        for k in planning_budgets:
-            ts, curve, _ = run_repetitions(
-                PrioritizedSweepingAgent,
-                n_timesteps,
-                n_repetitions,
-                eval_interval,
-                gamma,
-                learning_rate,
-                epsilon,
-                n_planning_updates=k,
-                wind_proportion=wind_proportion, 
-                default_reward_per_timestep=reward
-            )
-        
-            label = f"Reward = {reward}, K={k}"
-            ps_plot.ax.plot(
-                ts, 
-                smooth(curve, smoothing_window),
-                label=label,
-                color=colors[(reward, k)]
-            )
+        ts, curve, _ = run_repetitions(
+            PrioritizedSweepingAgent,
+            n_timesteps,
+            n_repetitions,
+            eval_interval,
+            gamma,
+            learning_rate,
+            epsilon,
+            n_planning_updates=n_planning_updates,
+            wind_proportion=wind_proportion, 
+            default_reward_per_timestep=reward
+        )
+    
+        ps_plot.ax.plot(
+            ts, 
+            smooth(curve, smoothing_window),
+            label=f"PS, Reward = {reward}",
+            color=colors[reward],
+            linestyle=linestyles[reward],
+            linewidth=2.0
+        )
 
     ps_plot.save("default_reward_effect_ps.png")
 
-def experiment(): 
+def experiment():
     np.random.seed(70)
     n_timesteps = 10001
     eval_interval = 250
@@ -257,10 +262,10 @@ def experiment():
     # Dyna experiments
     for wind_proportion in wind_proportions:
         if wind_proportion == 0.9:
-            title = "Dyna - Stochastic environment (wind=0.9)"
+            title = "Dyna - Stochastic WGW (wind=0.9)"
             fname = "dyna_stochastic.png"
         else:
-            title = "Dyna - Deterministic environment (wind=1.0)"
+            title = "Dyna - Deterministic WGW (wind=1.0)"
             fname = "dyna_deterministic.png"
 
         plot = LearningCurvePlot(title=title)
@@ -311,10 +316,10 @@ def experiment():
     # Prioritized Sweeping experiments
     for wind_proportion in wind_proportions:
         if wind_proportion == 0.9:
-            title = "Prioritized Sweeping - Stochastic environment (wind=0.9)"
+            title = "Prioritized Sweeping - Stochastic WGW (wind=0.9)"
             fname = "ps_stochastic.png"
         else:
-            title = "Prioritized Sweeping - Deterministic environment (wind=1.0)"
+            title = "Prioritized Sweeping - Deterministic WGW (wind=1.0)"
             fname = "ps_deterministic.png"
 
         plot = LearningCurvePlot(title=title)
@@ -354,10 +359,10 @@ def experiment():
         best_ps, best_ps_curve = select_best(ps_results[wind_proportion])
 
         if wind_proportion == 0.9:
-            comparison_title = "Comparison - Stochastic Environment (wind=0.9)"
+            comparison_title = "Comparison - Stochastic WGW (wind=0.9)"
             comparison_fname = "comparison_stochastic.png"
         else:
-            comparison_title = "Comparison - Deterministic Environment (wind=1.0)"
+            comparison_title = "Comparison - Deterministic WGW (wind=1.0)"
             comparison_fname = "comparison_deterministic.png"
 
         plot_comparison(
@@ -425,7 +430,7 @@ def experiment_long():
     wind_proportions = [0.9, 1.0]
 
     for wind_proportion in wind_proportions:
-        label = "stochastic" if wind_proportion == 0.9 else "deterministic"
+        label = "Stochastic WGW" if wind_proportion == 0.9 else "Deterministic WGW"
 
         ts_q, curve_q, _ = run_repetitions(
             DynaAgent, n_timesteps, n_repetitions, eval_interval,
@@ -447,12 +452,12 @@ def experiment_long():
             wind_proportion=wind_proportion,
         )
 
-        plot = LearningCurvePlot(title=f"Long-run comparison - {label} (wind={wind_proportion})")
+        plot = LearningCurvePlot(title=f"Long-run Comparison - {label} (wind={wind_proportion})")
         plot.add_curve(ts_q, smooth(curve_q, smoothing_window), label="Q-Learning")
         plot.add_curve(ts_dyna, smooth(curve_dyna, smoothing_window), label=f"Best Dyna K={best_dyna_n[wind_proportion]}")
         plot.add_curve(ts_ps, smooth(curve_ps, smoothing_window), label=f"Best PS K={best_ps_n[wind_proportion]}")
         plot.save(f"long_{label}.png")
-        print(f"Saved long_{label}.png")
+
 
 
 if __name__ == "__main__":
