@@ -381,6 +381,52 @@ def experiment():
     save_runtime_table(runtime_rows)
 
 
+def experiment_long():
+    n_timesteps = 50001
+    eval_interval = 250
+    n_repetitions = 20
+    gamma = 1.0
+    learning_rate = 0.2
+    epsilon = 0.1
+    smoothing_window = 11
+
+    best_dyna_n = {0.9: 5, 1.0: 3}
+    best_ps_n = {0.9: 3, 1.0: 1}
+
+    wind_proportions = [0.9, 1.0]
+
+    for wind_proportion in wind_proportions:
+        label = "stochastic" if wind_proportion == 0.9 else "deterministic"
+
+        ts_q, curve_q, _ = run_repetitions(
+            DynaAgent, n_timesteps, n_repetitions, eval_interval,
+            gamma, learning_rate, epsilon,
+            n_planning_updates=0, wind_proportion=wind_proportion,
+        )
+
+        ts_dyna, curve_dyna, _ = run_repetitions(
+            DynaAgent, n_timesteps, n_repetitions, eval_interval,
+            gamma, learning_rate, epsilon,
+            n_planning_updates=best_dyna_n[wind_proportion],
+            wind_proportion=wind_proportion,
+        )
+
+        ts_ps, curve_ps, _ = run_repetitions(
+            PrioritizedSweepingAgent, n_timesteps, n_repetitions, eval_interval,
+            gamma, learning_rate, epsilon,
+            n_planning_updates=best_ps_n[wind_proportion],
+            wind_proportion=wind_proportion,
+        )
+
+        plot = LearningCurvePlot(title=f"Long-run comparison - {label} (wind={wind_proportion})")
+        plot.add_curve(ts_q, smooth(curve_q, smoothing_window), label="Q-Learning")
+        plot.add_curve(ts_dyna, smooth(curve_dyna, smoothing_window), label=f"Best Dyna n={best_dyna_n[wind_proportion]}")
+        plot.add_curve(ts_ps, smooth(curve_ps, smoothing_window), label=f"Best PS n={best_ps_n[wind_proportion]}")
+        plot.save(f"long_{label}.png")
+        print(f"Saved long_{label}.png")
+
+
 if __name__ == "__main__":
-    experiment()
+    # experiment()
+    experiment_long()
     experiment_default_reward_effect()
