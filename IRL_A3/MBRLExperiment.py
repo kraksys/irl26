@@ -35,7 +35,7 @@ def run_repetitions(
 
     for rep in tqdm(
         range(n_repetitions),
-        desc=f"{agent_class.__name__} n_plan={n_planning_updates}, wind={wind_proportion}",
+        desc=f"{agent_class.__name__} k={n_planning_updates}, wind={wind_proportion}",
     ):
         # initialize a new environment and agent from scratch each repetition
         env = WindyGridworld(wind_proportion=wind_proportion, default_reward_per_timestep=default_reward_per_timestep)
@@ -86,11 +86,11 @@ def select_best(curves):
     best_curve = None
     best_return = -np.inf
 
-    for n_plan, curve in curves.items():
+    for k, curve in curves.items():
         score = np.mean(curve[int(len(curve) * 0.8):])
         if score > best_return:
             best_return = score
-            best_plan = n_plan
+            best_plan = k 
             best_curve = curve
 
     return best_plan, best_curve
@@ -117,13 +117,13 @@ def plot_comparison(
     plot.add_curve(
         eval_timesteps,
         smooth(best_dyna_curve, smoothing_window),
-        label=f"Best Dyna n={best_dyna}",
+        label=f"Best Dyna K={best_dyna}",
     )
 
     plot.add_curve(
         eval_timesteps,
         smooth(best_ps_curve, smoothing_window),
-        label=f"Best PS n={best_ps}",
+        label=f"Best PS K={best_ps}",
     )
 
     plot.save(filename)
@@ -160,50 +160,76 @@ def experiment_default_reward_effect():
     epsilon = 0.1
 
     wind_proportion = 0.9
-    n_planning_updates = 1 
+    planning_budgets = [1,3,5]
+    reward_values = [-1.0, -0.1]
     smoothing_window = 11
 
-    plot = LearningCurvePlot(title="Effect of default step reward on Dyna (wind=0.9)")
+    colors = {
+        (-1.0, 1): "tab:blue", 
+        (-1.0, 3): "tab:orange",
+        (-1.0, 5): "tab:green",
+        (-0.1, 1): "tab:red",
+        (-0.1, 3): "tab:purple",
+        (-0.1, 5): "tab:brown"
+    }
 
-    ts, curve_minus_one, _ = run_repetitions(
-        DynaAgent, 
-        n_timesteps, 
-        n_repetitions,
-        eval_interval, 
-        gamma, 
-        learning_rate, 
-        epsilon, 
-        n_planning_updates=n_planning_updates,
-        wind_proportion=wind_proportion, 
-        default_reward_per_timestep=-1.0,
-    )
+    dyna_plot = LearningCurvePlot(title="Default Reward Adjustment Dyna - Stochastic WGW (wind=0.9)")
 
-    ts, curve_zero, _ = run_repetitions(
-        DynaAgent, 
-        n_timesteps, 
-        n_repetitions,
-        eval_interval,
-        gamma, 
-        learning_rate,
-        epsilon,
-        n_planning_updates=n_planning_updates,
-        wind_proportion=wind_proportion,
-        default_reward_per_timestep=-0.1,
-    )
+    for reward in reward_values: 
+        for k in planning_budgets:
+            ts, curve, _ = run_repetitions(
+                DynaAgent,
+                n_timesteps,
+                n_repetitions,
+                eval_interval,
+                gamma, 
+                learning_rate,
+                epsilon,
+                n_planning_updates=k,
+                wind_proportion=wind_proportion,
+                default_reward_per_timestep=reward
+            )
 
-    plot.add_curve(
-        ts, 
-        smooth(curve_minus_one, smoothing_window),
-        label="Default reward = -1",
-    )
-
-    plot.add_curve(
-        ts, 
-        smooth(curve_zero, smoothing_window),
-        label="Default reward = -0.1",
-    )
+            label = f"Reward = {reward}, K={k}"
+            dyna_plot.ax.plot(
+                ts,
+                smooth(curve, smoothing_window),
+                label=label,
+                color=colors[(reward, k)]
+            )
     
-    plot.save("default_reward_effect.png")
+    dyna_plot.save("default_reward_effect_dyna.png")
+
+    # Prioritized Sweeping comparison 
+
+    ps_plot = LearningCurvePlot(
+        title="Default Reward Adjustment PS - Stochastic WGW (wind=0.9)"
+    )
+
+    for reward in reward_values:
+        for k in planning_budgets:
+            ts, curve, _ = run_repetitions(
+                PrioritizedSweepingAgent,
+                n_timesteps,
+                n_repetitions,
+                eval_interval,
+                gamma,
+                learning_rate,
+                epsilon,
+                n_planning_updates=k,
+                wind_proportion=wind_proportion, 
+                default_reward_per_timestep=reward
+            )
+        
+            label = f"Reward = {reward}, K={k}"
+            ps_plot.ax.plot(
+                ts, 
+                smooth(curve, smoothing_window),
+                label=label,
+                color=colors[(reward, k)]
+            )
+
+    ps_plot.save("default_reward_effect_ps.png")
 
 def experiment():
     n_timesteps = 10001
@@ -253,12 +279,12 @@ def experiment():
         q_results[wind_proportion] = curve
         q_runtimes[wind_proportion] = runtimes
 
-        plot.add_curve(ts, smooth(curve, smoothing_window), label="Q-Learning (n=0)")
+        plot.add_curve(ts, smooth(curve, smoothing_window), label="Q-Learning (K=0)")
 
         dyna_results[wind_proportion] = {}
         dyna_runtimes[wind_proportion] = {}
         # Dyna with different planning budgets
-        for n_plan in n_planning_updates:
+        for k in n_planning_updates:
             ts, curve, runtimes = run_repetitions(
                 DynaAgent,
                 n_timesteps,
@@ -267,15 +293,15 @@ def experiment():
                 gamma,
                 learning_rate,
                 epsilon,
-                n_planning_updates=n_plan,
+                n_planning_updates=k,
                 wind_proportion=wind_proportion,
             )
             plot.add_curve(
-                ts, smooth(curve, smoothing_window), label=f"Dyna n={n_plan}"
+                ts, smooth(curve, smoothing_window), label=f"Dyna K={k}"
             )
 
-            dyna_results[wind_proportion][n_plan] = curve
-            dyna_runtimes[wind_proportion][n_plan] = runtimes
+            dyna_results[wind_proportion][k] = curve
+            dyna_runtimes[wind_proportion][k] = runtimes
 
         plot.save(fname)
         print(f"Saved {fname}")
@@ -295,13 +321,13 @@ def experiment():
         plot.add_curve(
             ts,
             smooth(q_results[wind_proportion], smoothing_window),
-            label="Q-Learning (n=0)",
+            label="Q-Learning (K=0)",
         )
 
         ps_results[wind_proportion] = {}
         ps_runtimes[wind_proportion] = {}
         # Prioritized Sweeping with different planning budgets
-        for n_plan in n_planning_updates:
+        for k in n_planning_updates:
             ts, curve, runtimes = run_repetitions(
                 PrioritizedSweepingAgent,
                 n_timesteps,
@@ -310,13 +336,13 @@ def experiment():
                 gamma,
                 learning_rate,
                 epsilon,
-                n_planning_updates=n_plan,
+                n_planning_updates=k,
                 wind_proportion=wind_proportion,
             )
-            plot.add_curve(ts, smooth(curve, smoothing_window), label=f"PS n={n_plan}")
+            plot.add_curve(ts, smooth(curve, smoothing_window), label=f"PS K={k}")
 
-            ps_results[wind_proportion][n_plan] = curve
-            ps_runtimes[wind_proportion][n_plan] = runtimes
+            ps_results[wind_proportion][k] = curve
+            ps_runtimes[wind_proportion][k] = runtimes
 
         plot.save(fname)
         print(f"Saved {fname}")
@@ -420,13 +446,13 @@ def experiment_long():
 
         plot = LearningCurvePlot(title=f"Long-run comparison - {label} (wind={wind_proportion})")
         plot.add_curve(ts_q, smooth(curve_q, smoothing_window), label="Q-Learning")
-        plot.add_curve(ts_dyna, smooth(curve_dyna, smoothing_window), label=f"Best Dyna n={best_dyna_n[wind_proportion]}")
-        plot.add_curve(ts_ps, smooth(curve_ps, smoothing_window), label=f"Best PS n={best_ps_n[wind_proportion]}")
+        plot.add_curve(ts_dyna, smooth(curve_dyna, smoothing_window), label=f"Best Dyna K={best_dyna_n[wind_proportion]}")
+        plot.add_curve(ts_ps, smooth(curve_ps, smoothing_window), label=f"Best PS K={best_ps_n[wind_proportion]}")
         plot.save(f"long_{label}.png")
         print(f"Saved long_{label}.png")
 
 
 if __name__ == "__main__":
-    # experiment()
+    experiment()
     experiment_long()
     experiment_default_reward_effect()
